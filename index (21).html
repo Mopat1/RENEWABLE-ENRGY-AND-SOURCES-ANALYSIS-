@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Offshore Wind Case Study</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#06131f; --bg2:#0a2232; --ink:#eaf4f8; --mute:#8fb0c0; --dim:#5d7f90;
+    --teal:#3fd0c9; --sky:#6cc4ff; --amber:#ffb84d; --red:#ff6b6b;
+    --card:rgba(255,255,255,.045); --line:rgba(255,255,255,.12);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:#02080e;overflow:hidden;font-family:Inter,system-ui,sans-serif;color:var(--ink)}
+  #viewport{position:fixed;inset:0;display:grid;place-items:center}
+  #stage{width:1600px;height:900px;position:relative;flex:none;overflow:hidden;
+    background:radial-gradient(1200px 700px at 85% -10%, #12405a 0%, transparent 60%),
+               radial-gradient(900px 600px at -10% 110%, #0d3346 0%, transparent 55%),
+               linear-gradient(160deg,var(--bg) 0%, var(--bg2) 100%);}
+  h1,h2,h3{font-family:"Space Grotesk",sans-serif;margin:0;letter-spacing:-.02em}
+  .slide{position:absolute;inset:0;padding:80px 110px 120px;opacity:0;visibility:hidden;transition:opacity .6s ease, visibility 0s .6s}
+  .slide.active{opacity:1;visibility:visible;transition:opacity .6s ease}
+  .reveal{opacity:0;transform:translateY(26px);transition:opacity .7s cubic-bezier(.2,.7,.2,1), transform .7s cubic-bezier(.2,.7,.2,1);transition-delay:calc(var(--d,0) * 130ms + 150ms)}
+  .active .reveal{opacity:1;transform:none}
+  .eyebrow{font:600 20px/1 Inter;letter-spacing:.18em;text-transform:uppercase;color:var(--teal);margin-bottom:22px}
+  .title{font-size:64px;line-height:1.05;margin-bottom:46px;max-width:1300px}
+  .title em{font-style:normal;color:var(--teal)}
+  p{margin:0}
+  .notes{display:none}
+
+  /* footer + progress */
+  #footer{position:absolute;left:0;right:0;bottom:0;height:64px;display:flex;align-items:center;justify-content:space-between;
+    padding:0 110px;border-top:1px solid var(--line);background:rgba(2,10,16,.55);font-size:19px;color:var(--mute);z-index:5}
+  #footer b{color:var(--ink);font-weight:600;letter-spacing:.04em}
+  #footer .sep{color:var(--teal);margin:0 14px}
+  #progress{position:absolute;top:0;left:0;height:5px;background:linear-gradient(90deg,var(--teal),var(--sky));transition:width .6s ease;z-index:5}
+
+  /* cards */
+  .grid{display:grid;gap:28px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:34px 36px}
+  .stat{font:700 76px/1 "Space Grotesk";color:var(--teal);letter-spacing:-.03em}
+  .stat small{font-size:36px;color:var(--mute);margin-left:6px}
+  .label{font-size:22px;color:var(--mute);margin-top:12px;line-height:1.4}
+  .body{font-size:25px;line-height:1.5;color:#cfe2ea}
+  .body b{color:var(--ink)}
+  .tag{display:inline-block;font:600 16px/1 Inter;letter-spacing:.12em;text-transform:uppercase;padding:9px 14px;border-radius:999px;border:1px solid var(--line);color:var(--mute);margin-bottom:18px}
+
+  /* bars */
+  .hbar{margin-bottom:30px}
+  .hbar .row{display:flex;justify-content:space-between;font-size:24px;margin-bottom:10px}
+  .hbar .row span:last-child{font:600 26px "Space Grotesk"}
+  .track{height:54px;border-radius:12px;background:rgba(255,255,255,.07);overflow:hidden}
+  .track i{display:block;height:100%;width:0;border-radius:12px;transition:width 1.3s cubic-bezier(.2,.7,.2,1) .5s}
+  .active .track i{width:var(--v)}
+
+  .cols{display:flex;align-items:flex-end;gap:46px;height:420px;padding:0 10px;border-bottom:2px solid var(--line)}
+  .col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%}
+  .col .val{font:700 34px "Space Grotesk";margin-bottom:12px;opacity:0;transition:opacity .5s 1.4s}
+  .active .col .val{opacity:1}
+  .col .b{width:100%;height:0;border-radius:14px 14px 4px 4px;transition:height 1.3s cubic-bezier(.2,.7,.2,1) .5s}
+  .active .col .b{height:var(--h)}
+  .col .x{font-size:21px;color:var(--mute);margin-top:14px;position:absolute;transform:translateY(46px)}
+  .colwrap{position:relative}
+
+  /* turbines */
+  .rotor{transform-box:view-box;transform-origin:50px 60px;animation:spin var(--sp,6s) linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .wave{animation:drift 9s linear infinite}
+  @keyframes drift{to{transform:translateX(-400px)}}
+
+  /* misc */
+  .quote{font:600 46px/1.25 "Space Grotesk";letter-spacing:-.015em;border-left:6px solid var(--teal);padding-left:40px}
+  .stamp{display:inline-block;font:700 26px/1 "Space Grotesk";color:var(--red);border:3px solid var(--red);padding:12px 20px;border-radius:10px;transform:rotate(-6deg);letter-spacing:.06em}
+  .num{width:64px;height:64px;border-radius:18px;display:grid;place-items:center;font:700 30px "Space Grotesk";background:rgba(63,208,201,.14);color:var(--teal);margin-bottom:22px}
+  .arrow{font:700 60px "Space Grotesk";color:var(--teal);display:grid;place-items:center}
+  .src li{font-size:22px;color:#cfe2ea;margin-bottom:16px;line-height:1.4}
+  .src li span{color:var(--dim)}
+
+  #hint{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:rgba(0,0,0,.75);color:#cfe2ea;font:500 14px Inter;
+    padding:10px 16px;border-radius:999px;transition:opacity .8s;z-index:20;pointer-events:none}
+</style>
+</head>
+<body>
+<div id="viewport">
+<div id="stage">
+  <div id="progress"></div>
+
+  <!-- 1. TITLE -->
+  <section class="slide">
+    <svg style="position:absolute;right:60px;bottom:64px" width="760" height="520" viewBox="0 0 760 520">
+      <g fill="#cfe7ef">
+        <g transform="translate(120,150) scale(1.5)"><rect x="48.5" y="60" width="3" height="160" opacity=".9"/><g class="rotor" style="--sp:7s"><path d="M50 60 L47.5 18 Q50 6 52.5 18Z"/><path d="M50 60 L47.5 18 Q50 6 52.5 18Z" transform="rotate(120 50 60)"/><path d="M50 60 L47.5 18 Q50 6 52.5 18Z" transform="rotate(240 50 60)"/></g><circle cx="50" cy="60" r="4"/></g>
+        <g transform="translate(360,60) scale(2)"><rect x="48.5" y="60" width="3" height="160" opacity=".9"/><g class="rotor" style="--sp:9s"><path d="M50 60 L47.5 18 Q50 6 52.5 18Z"/><path d="M50 60 L47.5 18 Q50 6 52.5 18Z" transform="rotate(120 50 60)"/><path d="M50 60 L47.5 18 Q50 6 52.5 18Z" transform="rotate(240 50 60)"/></g><circle cx="50" cy="60" r="4"/></g>
+        <g transform="translate(580,210) scale(1.2)" opacity=".7"><rect x="48.5" y="60" width="3" height="160"/><g class="rotor" style="--sp:6s"><path d="M50 60 L47.5 18 Q50 6 52.5 18Z"/><path d="M50 60 L47.5 18 Q50 6 52.5 18Z" transform="rotate(120 50 60)"/><path d="M50 60 L47.5 18 Q50 6 52.5 18Z" transform="rotate(240 50 60)"/></g><circle cx="50" cy="60" r="4"/></g>
+      </g>
+      <g class="wave"><path d="M0 470 Q50 450 100 470 T200 470 T300 470 T400 470 T500 470 T600 470 T700 470 T800 470 T900 470 T1000 470 T1100 470 T1200 470 V520 H0Z" fill="#1d6b8a" opacity=".55"/></g>
+      <g class="wave" style="animation-duration:6s"><path d="M0 490 Q50 472 100 490 T200 490 T300 490 T400 490 T500 490 T600 490 T700 490 T800 490 T900 490 T1000 490 T1100 490 T1200 490 V520 H0Z" fill="#2a8fb0" opacity=".6"/></g>
+    </svg>
+    <div style="position:relative;max-width:820px;padding-top:70px">
+      <div class="eyebrow reveal">Renewable Energy Case Study · Part B</div>
+      <h1 class="reveal" style="--d:1;font-size:118px;line-height:.95">Offshore<br><span style="color:var(--teal)">Wind</span></h1>
+      <p class="reveal" style="--d:2;font-size:32px;color:#cfe2ea;margin-top:30px;line-height:1.35">How far has it come, and what's holding it back?</p>
+      <div class="reveal" style="--d:3;margin-top:70px;border-left:4px solid var(--teal);padding-left:24px">
+        <div style="font:700 30px 'Space Grotesk';letter-spacing:.03em">MD SHADAAN MOIN</div>
+        <div style="font-size:22px;color:var(--mute);margin-top:8px">RA2311003010742 · B.Tech CSE · SRM Institute of Science and Technology</div>
+      </div>
+    </div>
+    <div class="notes">Hi, I'm Shadaan. My case study looks at offshore wind energy, and specifically one question: how has offshore wind advanced in recent years, and what's stopping it from growing further?</div>
+  </section>
+
+  <!-- 2. RESEARCH QUESTION -->
+  <section class="slide">
+    <div class="eyebrow reveal">01 · Introduction &amp; research question</div>
+    <p class="quote reveal" style="--d:1;max-width:1250px">How has the deployment of offshore wind energy advanced in recent years, and what are the barriers to further development?</p>
+    <div class="grid" style="grid-template-columns:1fr 1fr;margin-top:70px">
+      <div class="card reveal" style="--d:2"><div class="tag">What I assumed · 1</div><p class="body">Offshore wind is just <b>onshore wind placed in the sea</b>.</p></div>
+      <div class="card reveal" style="--d:3"><div class="tag">What I assumed · 2</div><p class="body">With a <b>7,500 km coastline</b>, India must already be doing it.</p></div>
+    </div>
+    <div class="reveal" style="--d:5;position:absolute;right:130px;top:470px"><span class="stamp">BOTH WRONG</span></div>
+    <div class="notes">Before I started, I honestly assumed offshore wind was just onshore wind placed in the sea, and that India, with its long coastline, would already be doing it. Both of those assumptions turned out to be wrong.</div>
+  </section>
+
+  <!-- 3. FINDING 1: GLOBAL GROWTH -->
+  <section class="slide">
+    <div class="eyebrow reveal">02 · Key findings · Global growth</div>
+    <h2 class="title reveal" style="--d:1">Offshore wind is <em>growing fast</em> worldwide</h2>
+    <div class="grid" style="grid-template-columns:1fr 1.25fr;gap:60px;align-items:end">
+      <div class="grid" style="gap:22px">
+        <div class="card reveal" style="--d:2"><div class="stat">92.5<small>GW</small></div><div class="label">installed worldwide by end of 2025, nearing the 100 GW milestone</div></div>
+        <div class="grid" style="grid-template-columns:1fr 1fr;gap:22px">
+          <div class="card reveal" style="--d:3"><div class="stat" style="font-size:58px">6.6<small style="font-size:26px">GW</small></div><div class="label" style="font-size:19px">added by China alone in 2025</div></div>
+          <div class="card reveal" style="--d:4"><div class="stat" style="font-size:58px">~50%</div><div class="label" style="font-size:19px">of global capacity is in China</div></div>
+        </div>
+      </div>
+      <div class="reveal" style="--d:3">
+        <div style="font-size:22px;color:var(--mute);margin-bottom:24px">New offshore capacity added per year (GW)</div>
+        <div class="cols">
+          <div class="col colwrap"><div class="val">8.0</div><div class="b" style="--h:22%;background:#2a6f8a"></div><div class="x">2024</div></div>
+          <div class="col colwrap"><div class="val">9.3</div><div class="b" style="--h:26%;background:var(--sky)"></div><div class="x">2025</div></div>
+          <div class="col colwrap"><div class="val" style="color:var(--teal)">34</div><div class="b" style="--h:92%;background:linear-gradient(180deg,var(--teal),#1f8f8a)"></div><div class="x">2030 (forecast)</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="notes">Finding one: offshore wind is growing fast worldwide. In 2025 the world added about 9.3 gigawatts of offshore wind, bringing the total to around 92 gigawatts, close to the 100-gigawatt milestone. China alone added 6.6 gigawatts, and it holds roughly half of all offshore capacity in the world. And annual installations are forecast to reach around 34 gigawatts a year by 2030.</div>
+  </section>
+
+  <!-- 4. FINDING 2: TECHNOLOGY -->
+  <section class="slide">
+    <div class="eyebrow reveal">02 · Key findings · Technology</div>
+    <h2 class="title reveal" style="--d:1">Not just turbines in water: <em>a different technology</em></h2>
+    <div class="grid" style="grid-template-columns:1fr 1.15fr;gap:60px;align-items:center">
+      <div class="grid" style="gap:20px">
+        <div class="card reveal" style="--d:2;padding:26px 32px"><p class="body"><b>Stronger, steadier winds</b> at sea, so more power per turbine than onshore</p></div>
+        <div class="card reveal" style="--d:3;padding:26px 32px"><p class="body"><b>Much larger turbines</b>, since there are no roads or land limits on size</p></div>
+        <div class="card reveal" style="--d:4;padding:26px 32px"><p class="body"><b>Floating foundations</b> now unlock deep water where fixed ones can't reach</p></div>
+      </div>
+      <svg class="reveal" style="--d:3" viewBox="0 0 720 460" width="720" height="460">
+        <rect x="0" y="120" width="720" height="340" fill="#0f3c55" opacity=".55"/>
+        <path d="M0 120 Q30 112 60 120 T120 120 T180 120 T240 120 T300 120 T360 120 T420 120 T480 120 T540 120 T600 120 T660 120 T720 120" stroke="#6cc4ff" stroke-width="3" fill="none"/>
+        <path d="M0 250 L250 270 L720 440 L720 460 L0 460Z" fill="#2b2a24"/>
+        <!-- fixed -->
+        <g fill="#eaf4f8"><rect x="128" y="40" width="5" height="225"/>
+          <g transform="translate(80.5,-20)"><g class="rotor" style="--sp:6s"><path d="M50 60 L47.5 18 Q50 6 52.5 18Z"/><path d="M50 60 L47.5 18 Q50 6 52.5 18Z" transform="rotate(120 50 60)"/><path d="M50 60 L47.5 18 Q50 6 52.5 18Z" transform="rotate(240 50 60)"/></g><circle cx="50" cy="60" r="4"/></g></g>
+        <!-- floating -->
+        <g fill="#eaf4f8"><rect x="528" y="40" width="5" height="85"/>
+          <g transform="translate(480.5,-20)"><g class="rotor" style="--sp:7s"><path d="M50 60 L47.5 18 Q50 6 52.5 18Z"/><path d="M50 60 L47.5 18 Q50 6 52.5 18Z" transform="rotate(120 50 60)"/><path d="M50 60 L47.5 18 Q50 6 52.5 18Z" transform="rotate(240 50 60)"/></g><circle cx="50" cy="60" r="4"/></g>
+          <rect x="505" y="122" width="52" height="40" rx="8" fill="#ffb84d"/></g>
+        <path d="M510 160 L440 406 M552 160 L640 410" stroke="#ffb84d" stroke-width="2" stroke-dasharray="6 6"/>
+        <text x="130" y="300" fill="#cfe2ea" font-family="Inter" font-size="20" text-anchor="middle">Fixed-bottom</text>
+        <text x="130" y="324" fill="#8fb0c0" font-family="Inter" font-size="16" text-anchor="middle">shallow water</text>
+        <text x="530" y="230" fill="#cfe2ea" font-family="Inter" font-size="20" text-anchor="middle">Floating</text>
+        <text x="530" y="254" fill="#8fb0c0" font-family="Inter" font-size="16" text-anchor="middle">deep water, moored</text>
+      </svg>
+    </div>
+    <div class="notes">Finding two: the technology has improved a lot. Winds at sea are stronger and steadier, so offshore turbines produce more power. Turbines are much larger, because there are no road or land limits on their size. And floating turbines now allow wind farms in deep water, where fixed foundations simply aren't possible.</div>
+  </section>
+
+  <!-- 5. FINDING 3: INDIA -->
+  <section class="slide">
+    <div class="eyebrow reveal">02 · Key findings · India</div>
+    <h2 class="title reveal" style="--d:1">India: <em>huge potential</em>, nothing built yet</h2>
+    <div class="grid" style="grid-template-columns:1fr 1fr 1.35fr;gap:28px;align-items:stretch">
+      <div class="card reveal" style="--d:2;display:flex;flex-direction:column;justify-content:center"><div class="stat" style="color:var(--red);font-size:110px">0<small>GW</small></div><div class="label">offshore wind commissioned in India</div></div>
+      <div class="card reveal" style="--d:3;display:flex;flex-direction:column;justify-content:center"><div class="stat" style="font-size:110px">~70<small>GW</small></div><div class="label">technical potential off Gujarat &amp; Tamil Nadu</div></div>
+      <div class="card reveal" style="--d:4">
+        <div style="font-size:21px;color:var(--mute);margin-bottom:26px">Measured capacity factor at offshore sites</div>
+        <div class="hbar"><div class="row"><span>Tamil Nadu</span><span style="color:var(--teal)">~50%</span></div><div class="track"><i style="--v:50%;background:var(--teal)"></i></div></div>
+        <div class="hbar"><div class="row"><span>Gujarat</span><span style="color:var(--sky)">37%</span></div><div class="track"><i style="--v:37%;background:var(--sky)"></i></div></div>
+        <p class="label" style="margin-top:6px">National target: <b style="color:var(--ink)">30 GW by 2030</b></p>
+      </div>
+    </div>
+    <div class="notes">Finding three, the one that surprised me most: India has zero commissioned offshore wind capacity, despite an estimated 70 gigawatts of potential off Gujarat and Tamil Nadu. Measurements show offshore sites in Tamil Nadu could run at about 50 percent capacity, compared to around 37 percent in Gujarat. And India has a target of 30 gigawatts by 2030.</div>
+  </section>
+
+  <!-- 6. CHALLENGE: COST -->
+  <section class="slide">
+    <div class="eyebrow reveal">03 · Challenges &amp; impacts · Cost</div>
+    <h2 class="title reveal" style="--d:1">The biggest barrier: <em style="color:var(--amber)">it costs too much</em></h2>
+    <div class="grid" style="grid-template-columns:1.5fr 1fr;gap:70px;align-items:center">
+      <div class="reveal" style="--d:2">
+        <div style="font-size:22px;color:var(--mute);margin-bottom:28px">Estimated cost of electricity (₹ per unit)</div>
+        <div class="hbar"><div class="row"><span>Offshore wind, Gujarat</span><span style="color:var(--red)">₹10.5</span></div><div class="track"><i style="--v:100%;background:var(--red)"></i></div></div>
+        <div class="hbar"><div class="row"><span>Offshore wind, Tamil Nadu</span><span style="color:var(--amber)">₹9.6</span></div><div class="track"><i style="--v:91%;background:var(--amber)"></i></div></div>
+        <div class="hbar"><div class="row"><span>Current grid tariff</span><span style="color:var(--teal)">~₹7</span></div><div class="track"><i style="--v:67%;background:var(--teal)"></i></div></div>
+      </div>
+      <div class="card reveal" style="--d:4"><div class="stat" style="color:var(--amber)">37–50%</div><div class="label">more expensive than power from the grid, so developers can't make the numbers work</div></div>
+    </div>
+    <div class="notes">So why hasn't it happened? The biggest barrier is cost. Offshore wind power in India is estimated at around 9.6 rupees per unit in Tamil Nadu and 10.5 rupees in Gujarat, while current grid tariffs are around 7 rupees. Developers simply can't make the numbers work.</div>
+  </section>
+
+  <!-- 7. OTHER BARRIERS -->
+  <section class="slide">
+    <div class="eyebrow reveal">03 · Challenges &amp; impacts · Other barriers</div>
+    <h2 class="title reveal" style="--d:1">Cost is only <em>part of the story</em></h2>
+    <div class="grid" style="grid-template-columns:1fr 1fr;gap:26px">
+      <div class="card reveal" style="--d:2"><div class="tag" style="color:var(--red);border-color:rgba(255,107,107,.4)">Tender failure</div><p class="body">In Aug 2025, SECI <b>cancelled 4.5 GW</b> of offshore tenders because almost no developers bid.</p></div>
+      <div class="card reveal" style="--d:3"><div class="tag" style="color:var(--amber);border-color:rgba(255,184,77,.4)">Supply chain</div><p class="body">Few <b>installation vessels</b>, limited <b>port facilities</b>, and heavy dependence on imports.</p></div>
+      <div class="card reveal" style="--d:4"><div class="tag" style="color:var(--sky);border-color:rgba(108,196,255,.4)">Global slowdown</div><p class="body">Auctions fell to <b>11.4 GW</b> in 2025; <b>~25 GW</b> of approved projects outside China are stalled.</p></div>
+      <div class="card reveal" style="--d:5"><div class="tag" style="color:var(--teal);border-color:rgba(63,208,201,.4)">Social &amp; environmental</div><p class="body">Fishing communities fear <b>losing fishing grounds</b>; construction can disturb <b>marine life</b>.</p></div>
+    </div>
+    <div class="notes">That showed up clearly in August 2025, when SECI cancelled offshore wind tenders totalling 4.5 gigawatts because almost no developers bid. India also lacks the special installation vessels, port facilities and local supply chain, so most equipment would have to be imported. Globally there's a similar slowdown: auction volumes dropped sharply in 2025, and around 25 gigawatts of approved projects outside China are stuck waiting for investment decisions. There's also a social impact. Fishing communities worry about losing their fishing grounds, and seabed construction can disturb marine life.</div>
+  </section>
+
+  <!-- 8. REFLECTION -->
+  <section class="slide">
+    <div class="eyebrow reveal">04 · Personal reflection: What did I learn?</div>
+    <h2 class="title reveal" style="--d:1">How my thinking <em>changed</em></h2>
+    <div class="grid" style="grid-template-columns:1fr 110px 1fr;align-items:stretch">
+      <div class="card reveal" style="--d:2"><div class="tag">Before</div><p style="font:600 36px/1.3 'Space Grotesk';color:#cfe2ea">A <span style="color:var(--mute)">technical</span> problem:<br>can we build turbines in the sea?</p></div>
+      <div class="arrow reveal" style="--d:3">→</div>
+      <div class="card reveal" style="--d:4;border-color:rgba(63,208,201,.45);background:rgba(63,208,201,.07)"><div class="tag" style="color:var(--teal);border-color:rgba(63,208,201,.4)">After</div><p style="font:600 36px/1.3 'Space Grotesk'">An <span style="color:var(--teal)">economic &amp; policy</span> problem:<br>cost, infrastructure, investor confidence.</p></div>
+    </div>
+    <p class="body reveal" style="--d:6;margin-top:50px;font-size:28px;max-width:1300px">Good natural resources aren't enough. Without <b>ports, vessels, grid connections and finance</b>, the wind stays unused.</p>
+    <div class="notes">What did I learn? I started thinking the challenge was technical, whether we can build turbines in the sea. I now understand the real challenge is economic and institutional. The technology already works; China proves that. The problem is cost, infrastructure and investor confidence. I also realised that having good natural resources isn't enough. India has the wind, but without ports, vessels, grid connections and financial support, that wind stays unused. This changed how I see renewable energy. It's not only an engineering problem, it's a planning and policy problem.</div>
+  </section>
+
+  <!-- 9. RECOMMENDATIONS -->
+  <section class="slide">
+    <div class="eyebrow reveal">05 · Solutions &amp; recommendations</div>
+    <h2 class="title reveal" style="--d:1">Three things India should do</h2>
+    <div class="grid" style="grid-template-columns:repeat(3,1fr)">
+      <div class="card reveal" style="--d:2"><div class="num">1</div><h3 style="font-size:32px;margin-bottom:16px">Back the first projects</h3><p class="body">Continue financial support. <b>₹7,500 crore</b> of viability gap funding for the first <b>1 GW</b> is a strong start.</p></div>
+      <div class="card reveal" style="--d:3"><div class="num">2</div><h3 style="font-size:32px;margin-bottom:16px">Build the ecosystem</h3><p class="body">Invest in <b>ports, vessels and local manufacturing</b>, with partners like the <b>India–UK Offshore Wind Taskforce</b> (2026).</p></div>
+      <div class="card reveal" style="--d:4"><div class="num">3</div><h3 style="font-size:32px;margin-bottom:16px">Communities first</h3><p class="body">Consult <b>fishing communities early</b>, with fair compensation and shared benefits.</p></div>
+    </div>
+    <div class="notes">Based on this, I'd recommend three things. First, continue financial support. The government's viability gap funding for the first 1 gigawatt is a good start. Second, invest in ports, installation vessels and local manufacturing to bring costs down, with help from partnerships like the India–UK Offshore Wind Taskforce launched in 2026. Third, involve fishing communities early, through consultation, compensation and shared benefits, so projects are accepted rather than resisted.</div>
+  </section>
+
+  <!-- 10. TAKEAWAY -->
+  <section class="slide">
+    <svg style="position:absolute;right:90px;bottom:64px;opacity:.35" width="520" height="560" viewBox="0 0 520 560">
+      <g fill="#cfe7ef"><g transform="translate(160,40) scale(2.4)"><rect x="48.5" y="60" width="3" height="160"/><g class="rotor" style="--sp:10s"><path d="M50 60 L47.5 18 Q50 6 52.5 18Z"/><path d="M50 60 L47.5 18 Q50 6 52.5 18Z" transform="rotate(120 50 60)"/><path d="M50 60 L47.5 18 Q50 6 52.5 18Z" transform="rotate(240 50 60)"/></g><circle cx="50" cy="60" r="4"/></g></g>
+    </svg>
+    <div style="position:relative;padding-top:90px;max-width:1080px">
+      <div class="eyebrow reveal">06 · Final takeaway</div>
+      <p class="reveal" style="--d:1;font:700 70px/1.1 'Space Grotesk';letter-spacing:-.025em">The technology works.<br>India's real challenge is <span style="color:var(--teal)">making it affordable.</span></p>
+      <p class="body reveal" style="--d:3;margin-top:44px;font-size:28px">Get the first projects right, especially off <b>Tamil Nadu</b>, and the wind at sea could become one of India's strongest clean-energy sources.</p>
+    </div>
+    <div class="notes">Offshore wind has proven itself globally. India's challenge isn't whether it can work, but whether we can make it affordable. If we get the first projects right, especially off Tamil Nadu, the wind out at sea could become one of India's strongest clean energy sources.</div>
+  </section>
+
+  <!-- 11. SOURCES -->
+  <section class="slide">
+    <div class="eyebrow reveal">References</div>
+    <h2 class="title reveal" style="--d:1">Thank you</h2>
+    <div class="grid" style="grid-template-columns:1.4fr 1fr;gap:70px">
+      <ul class="src reveal" style="--d:2;padding-left:24px;margin:0">
+        <li>GWEC, <i>Global Wind Report 2026</i> <span>(global &amp; offshore capacity)</span></li>
+        <li>GWEC, <i>Global Offshore Wind Report 2025 &amp; 2026</i> <span>(additions, forecasts, India outlook)</span></li>
+        <li>Ministry of New and Renewable Energy, via PIB <span>(India wind capacity, policy)</span></li>
+        <li>Renewable Watch, 2026 <span>(offshore targets, tender cancellations)</span></li>
+        <li>Outlook Business; WION <span>(viability gap funding, capacity factors)</span></li>
+      </ul>
+      <div class="card reveal" style="--d:3;align-self:start">
+        <div style="font:700 32px 'Space Grotesk';letter-spacing:.03em">MD SHADAAN MOIN</div>
+        <div class="label">RA2311003010742</div>
+        <div class="label">B.Tech Computer Science &amp; Engineering<br>SRM Institute of Science and Technology</div>
+      </div>
+    </div>
+    <div class="notes">Thank you for watching.</div>
+  </section>
+
+  <div id="footer"><div><b>MD SHADAAN MOIN</b><span class="sep">|</span>RA2311003010742</div><div id="count">Offshore Wind Case Study · 01 / 11</div></div>
+</div>
+</div>
+<div id="hint">← → navigate · P presenter notes · F fullscreen</div>
+
+<script>
+  const slides=[...document.querySelectorAll('.slide')];
+  const stage=document.getElementById('stage');
+  const prog=document.getElementById('progress');
+  const count=document.getElementById('count');
+  let i=0, pw=null;
+
+  function fit(){const s=Math.min(innerWidth/1600,innerHeight/900);stage.style.transform=`scale(${s})`;}
+  addEventListener('resize',fit);fit();
+
+  function pad(n){return String(n).padStart(2,'0')}
+  function show(n){
+    i=Math.max(0,Math.min(slides.length-1,n));
+    slides.forEach((s,k)=>s.classList.toggle('active',k===i));
+    prog.style.width=((i+1)/slides.length*100)+'%';
+    count.textContent=`Offshore Wind Case Study · ${pad(i+1)} / ${pad(slides.length)}`;
+    history.replaceState(null,'','#'+(i+1));
+    updateNotes();
+  }
+  function updateNotes(){
+    if(!pw||pw.closed)return;
+    const d=pw.document;
+    d.getElementById('c').textContent=`Slide ${i+1} of ${slides.length}`;
+    d.getElementById('n').textContent=slides[i].querySelector('.notes').textContent;
+    const nx=slides[i+1];
+    d.getElementById('x').textContent=nx?'Next: '+nx.querySelector('.notes').textContent.slice(0,90)+'…':'End of presentation';
+  }
+  function openNotes(){
+    pw=window.open('','presenter_notes','width=720,height=560');
+    if(!pw)return;
+    pw.document.write(`<!doctype html><title>Presenter notes</title><body style="margin:0;background:#0b1720;color:#eaf4f8;font-family:Inter,system-ui,sans-serif;padding:32px">
+      <div id="c" style="color:#3fd0c9;font-weight:600;letter-spacing:.1em;text-transform:uppercase;font-size:14px"></div>
+      <p id="n" style="font-size:26px;line-height:1.55;margin:18px 0 28px"></p>
+      <p id="x" style="color:#8fb0c0;font-size:15px"></p>
+      <p style="color:#5d7f90;font-size:13px;margin-top:30px">Use ← → in this window or the main one.</p></body>`);
+    pw.document.close();
+    pw.document.addEventListener('keydown',key);
+    updateNotes();
+  }
+  function key(e){
+    if(['ArrowRight','PageDown',' '].includes(e.key)){e.preventDefault();show(i+1)}
+    else if(['ArrowLeft','PageUp'].includes(e.key)){e.preventDefault();show(i-1)}
+    else if(e.key==='Home')show(0);
+    else if(e.key==='End')show(slides.length-1);
+    else if(e.key.toLowerCase()==='p')openNotes();
+    else if(e.key.toLowerCase()==='f'){document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen()}
+  }
+  addEventListener('keydown',key);
+  stage.addEventListener('click',e=>{(e.clientX>innerWidth/2)?show(i+1):show(i-1)});
+  let tx=null;addEventListener('touchstart',e=>tx=e.touches[0].clientX);
+  addEventListener('touchend',e=>{if(tx===null)return;const dx=e.changedTouches[0].clientX-tx;if(Math.abs(dx)>50)show(i+(dx<0?1:-1));tx=null});
+
+  setTimeout(()=>document.getElementById('hint').style.opacity=0,4000);
+  show((parseInt(location.hash.slice(1))||1)-1);
+</script>
+</body>
+</html>
